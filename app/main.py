@@ -10,6 +10,9 @@ def main():
     """Main application entry point"""
     app = QApplication(sys.argv)
     
+    # Set Fusion style for better Tokyo Night theme compatibility
+    app.setStyle('Fusion')
+    
     # Set application metadata
     app.setApplicationName("Python Clean Code Linter")
     app.setOrganizationName("CleanCode")

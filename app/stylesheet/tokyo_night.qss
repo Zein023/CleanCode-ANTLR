@@ -1,0 +1,342 @@
+/* Tokyo Night inspired Qt stylesheet
+   - Backgrounds: dark navy/indigo
+   - Accents: purple/teal
+   - Subtle borders and rounded controls
+   - Works with Fusion style
+*/
+
+:root {
+}
+
+QWidget {
+  background-color: #161821; /* bg0 */
+  color: #c0caf5;           /* fg */
+  font-family:  "Segoe UI", "Helvetica Neue", Arial;
+  font-size: 11pt;
+}
+
+QMainWindow::separator {
+  background: transparent;
+}
+
+QToolTip {
+  background-color: #1f2335;
+  color: #c0caf5;
+  border: 1px solid #2f3346;
+}
+
+/* Buttons */
+QPushButton {
+  background-color: #2a2f45; /* bg1 */
+  border: 1px solid #2f3346;
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+QPushButton:hover {
+  background-color: #323651;
+}
+QPushButton:pressed {
+  background-color: #222430;
+}
+
+/* Button variants by dynamic property [variant] or objectName */
+/* Accent buttons: flat colors (no gradient) */
+QPushButton[variant="accent"], QPushButton#pbCalculate, QPushButton#pbAddVariable {
+  background-color: #6D90DC; /* TokyoNight VSCode accent */
+  color: white;
+  border: none;
+}
+QPushButton[variant="accent"]:hover, QPushButton#pbCalculate:hover, QPushButton#pbAddVariable:hover {
+  background-color: #5F82D4;
+}
+
+/* Success variant: use Tokyo Night green */
+QPushButton[variant="success"], QPushButton#pbInsertAnswer {
+  background-color: #9ECE6A; /* Tokyo Night green */
+  color: #06130a; /* dark text for contrast */
+  border: none;
+}
+QPushButton[variant="success"]:hover, QPushButton#pbInsertAnswer:hover {
+  background-color: #88b95a; /* slightly darker on hover */
+}
+QPushButton[variant="success"]:pressed, QPushButton#pbInsertAnswer:pressed {
+  background-color: #6fa449; /* pressed state */
+}
+/* Disabled success: desaturated/low-contrast green */
+QPushButton[variant="success"]:disabled, QPushButton#pbInsertAnswer:disabled {
+  background-color: #364c33; /* muted green-gray */
+  color: #9fbda1;
+  border: none;
+}
+QPushButton[variant="danger"], QPushButton#pbClearData, QPushButton#pbOptionDelete, QPushButton#pbQuestionDelete {
+  background-color: #f35b6b;
+  color: white;
+  border: none;
+}
+QPushButton[variant="danger"]:hover, QPushButton#pbClearData:hover, QPushButton#pbOptionDelete:hover, QPushButton#pbQuestionDelete:hover {
+  background-color: #e04b5b;
+}
+/* Disabled danger: muted red/gray for pbClearData and danger variant */
+QPushButton[variant="danger"]:disabled, QPushButton#pbClearData:disabled {
+  background-color: #4a3a3c; /* muted maroon/gray */
+  color: #bda3a6;
+  border: none;
+}
+
+/* small icon buttons */
+QPushButton[iconOnly="true"] { padding: 4px; min-width: 28px; min-height: 28px; }
+
+/* Line edits and text edits */
+QLineEdit, QTextEdit, QPlainTextEdit {
+  background-color: #0f1117; /* slightly darker */
+  border: 1px solid #2f3346;
+  border-radius: 4px;
+  padding: 6px;
+}
+
+QTextEdit[readOnly="true"] {
+  background-color: transparent;
+}
+
+/* Labels */
+QLabel#lQuizTitle, QLabel#lStatus {
+  color: #7aa2f7; /* accent */
+  font-weight: 600;
+}
+
+/* Table */
+QTableWidget, QTableView {
+  background-color: transparent;
+  gridline-color: #222430;
+  alternate-background-color: #151521;
+}
+QHeaderView::section {
+  background-color: #111218;
+  color: #9fb2ff;
+  padding: 6px;
+  border: 1px solid #1e2130;
+}
+QTableWidget::item {
+  padding: 6px;
+  border-bottom: 1px solid rgba(47,51,70,0.3);
+}
+
+/* Scrollbars - subtle */
+QScrollBar:vertical {
+  background: transparent;
+  width: 10px;
+  margin: 0px 0px 0px 0px;
+}
+QScrollBar::handle:vertical {
+  background: #2f3346;
+  min-height: 20px;
+  border-radius: 5px;
+}
+QScrollBar::sub-line, QScrollBar::add-line { height: 0px; }
+
+QScrollBar:horizontal {
+  background: transparent;
+  height: 10px;
+  margin: 0px 0px 0px 0px;
+}
+QScrollBar::handle:horizontal {
+  background: #2f3346;
+  min-width: 20px;
+  border-radius: 5px;
+}
+QScrollBar::sub-line:horizontal, QScrollBar::add-line:horizontal { width: 0px; }
+
+/* Scroll area visual improvement: subtle border and rounded viewport to frame content */
+QScrollArea {
+  border: 1px solid rgba(47,51,70,0.28);
+  border-radius: 8px;
+  background: rgba(8,10,16,0.0);
+}
+
+QScrollArea QWidget {
+  background: transparent;
+  padding: 6px; /* create comfortable spacing inside the scroll area */
+}
+
+/* Make the scroll area content darker than QGroupBox so questions stand out */
+QScrollArea#scrollArea QWidget#scrollAreaWidgetContents {
+  background-color: #0f1117; /* slightly darker than global but not too dark */
+  border-radius: 6px;
+  padding: 8px;
+}
+
+/* Force groupboxes inside the quiz scroll areas to match global QWidget background */
+QScrollArea#scrollArea QWidget#scrollAreaWidgetContents QGroupBox {
+  background: #161821;
+  border: 1px solid rgba(47,51,70,0.18);
+}
+
+/* Variable panel scroll areas: slightly darker viewport, but keep QGroupBox inside matching global background */
+QScrollArea#scrollAreaVariable QWidget#scrollAreaWidgetContents {
+  background-color: #0f1117;
+  border-radius: 6px;
+  padding: 8px;
+}
+QScrollArea#scrollAreaVariable QWidget#scrollAreaWidgetContents QGroupBox {
+  background: #161821;
+  border: 1px solid rgba(47,51,70,0.18);
+}
+
+QScrollArea#scrollAreaVariable_2 QWidget#scrollAreaWidgetContents_4 {
+  background-color: #0f1117;
+  border-radius: 6px;
+  padding: 8px;
+}
+QScrollArea#scrollAreaVariable_2 QWidget#scrollAreaWidgetContents_4 QGroupBox {
+  background: #161821;
+  border: 1px solid rgba(47,51,70,0.18);
+}
+
+/* GroupBox */
+QGroupBox {
+  border: 1px solid #1f2230; /* slightly thinner */
+  margin-top: 16px; /* leave space for the title */
+  border-radius: 8px;
+  padding: 8px 10px; /* comfortable padding; top padding leaves room for title */
+  background: #161821; /* match global QWidget background for a neutral look */
+}
+
+/* GroupBox title style: compact pill sitting on the border */
+QGroupBox::title {
+  subcontrol-origin: margin;
+  subcontrol-position: top left;
+  left: 12px;
+  padding: 2px 8px;
+  color: #e6e9ff;
+  background:rgba(36,40,64,1);
+  border-radius: 4px;
+  border: 1px solid #6D90DC;
+  margin-left: 6px;
+  font-weight: 600;
+}
+
+/* ComboBox */
+QComboBox {
+  background-color: #0f1117;
+  border: 1px solid #2f3346;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
+QComboBox QAbstractItemView {
+  background: #161821;
+  color: #c0caf5;
+  border: 1px solid #2f3346;
+}
+
+/* Option input styling by role */
+QLineEdit[role="option"] {
+  background-color: #08080b;
+  border: 1px solid rgba(47,51,70,0.3);
+  padding: 6px;
+  border-radius: 4px;
+}
+
+/* Make question and answer inputs slightly darker (visible but still in-theme) */
+QTextEdit#teQuestion, QTextEdit[objectName="teQuestion"] {
+  background-color: #0b0c10; /* darker than default input */
+  border: 1px solid rgba(47,51,70,0.28);
+}
+
+QLineEdit#leAnswer, QLineEdit[objectName="leAnswer"], QLineEdit#leOption, QLineEdit[objectName="leOption"] {
+  background-color: #0b0c10; /* darker line edit for short answer and option */
+  border: 1px solid rgba(47,51,70,0.28);
+  color: #d7dbff;
+}
+
+/* Progress/Sliders */
+QProgressBar {
+  background: #0f1117;
+  border-radius: 6px;
+  text-align: center;
+  padding: 4px;
+}
+QProgressBar::chunk {
+  background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #6cc6d6, stop:1 #9b7cfb);
+  border-radius: 6px;
+}
+
+/* Tabs */
+QTabBar::tab {
+  background: transparent;
+  padding: 8px 12px;
+  border-radius: 6px;
+}
+QTabBar::tab:selected {
+  background: transparent;
+  color: #e6e9ff;
+  border: none;
+  padding-bottom: 8px;
+}
+
+/* remove heavy pane border and use a subtle underline for the selected tab */
+QTabWidget::pane {
+  border: none; /* remove the default frame */
+  background: transparent;
+}
+
+QTabBar::tab:!selected { color: #9fb2ff; }
+QTabBar::tab:!selected:hover { background: rgba(47,51,70,0.18); }
+
+/* add a thin underline to the selected tab using a subcontrol trick */
+QTabBar::tab:selected {
+  border-bottom: 3px solid #7aa2f7; /* accent underline */
+}
+
+/* Menus */
+QMenuBar, QMenu {
+  background: #12121a;
+  color: #c0caf5;
+}
+QMenu::item:selected { background: #2f3346; color: #ffffff; }
+
+/* Checkbox/Radio */
+QCheckBox, QRadioButton { color: #c0caf5; }
+
+/* Radio button custom indicator */
+QRadioButton::indicator {
+  width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  border: 1px solid #2f3346;
+  background: #0f1117;
+}
+QRadioButton::indicator:hover {
+  border-color: #7aa2f7;
+}
+QRadioButton::indicator:checked {
+  background: qradialgradient(cx:0.5, cy:0.5, radius:0.6, fx:0.5, fy:0.5, stop:0 #9b7cfb, stop:1 #6cc6d6);
+  border-color: #9b7cfb;
+}
+
+/* Checkbox indicator tweaks */
+QCheckBox::indicator {
+  width: 14px; height: 14px; border-radius: 3px; border: 1px solid #2f3346; background: #0f1117;
+}
+QCheckBox::indicator:checked { background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #6cc6d6, stop:1 #9b7cfb); border-color: #6cc6d6; }
+
+/* Nice focus effect */
+*:focus {
+  outline: none;
+}
+
+/* Selection in tables and lists */
+QTableView::item:selected, QListView::item:selected, QTreeView::item:selected {
+  background: rgba(122,162,247,0.18);
+}
+
+/* small helpers */
+.small-muted { color: #6b6f86; font-size: 9pt; }
+
+/* General disabled button appearance (more muted, fits tokyo night) */
+QPushButton:disabled {
+  color: #7a7f90;
+  background-color: #1b1d23;
+  border: 1px solid rgba(47,51,70,0.12);
+}
+
+/* end of tokyo night inspired stylesheet */

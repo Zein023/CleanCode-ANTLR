@@ -34,6 +34,7 @@ class ConfigDialog(QDialog):
         title_font = QFont("Segoe UI", 14, QFont.Weight.Bold)
         title.setFont(title_font)
         title.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        title.setStyleSheet("color: #7aa2f7;")  # Tokyo Night accent color
         layout.addWidget(title)
         
         # Tab widget for different config sections
@@ -322,52 +323,29 @@ class ConfigDialog(QDialog):
             self.load_config_values()
     
     def apply_style(self):
-        """Apply styling to dialog"""
-        style = """
-        QDialog {
-            background-color: #f5f5f5;
-        }
+        """Apply Tokyo Night styling to dialog"""
+        # Load Tokyo Night stylesheet
+        import os
+        stylesheet_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            'stylesheet',
+            'tokyo_night.qss'
+        )
         
-        QGroupBox {
-            font-weight: bold;
-            border: 2px solid #3498db;
-            border-radius: 8px;
-            margin-top: 10px;
-            padding-top: 10px;
-            background-color: white;
-        }
+        try:
+            with open(stylesheet_path, 'r', encoding='utf-8') as f:
+                stylesheet = f.read()
+            self.setStyleSheet(stylesheet)
+        except FileNotFoundError:
+            print(f"Warning: Tokyo Night stylesheet not found")
+            # Fallback to basic dark theme
+            self.setStyleSheet("""
+                QDialog { background-color: #161821; color: #c0caf5; }
+                QPushButton { background-color: #2a2f45; color: #c0caf5; border-radius: 6px; padding: 6px 10px; }
+            """)
         
-        QGroupBox::title {
-            subcontrol-origin: margin;
-            left: 10px;
-            padding: 0 5px 0 5px;
-        }
-        
-        QPushButton {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            font-weight: bold;
-        }
-        
-        QPushButton:hover {
-            background-color: #2980b9;
-        }
-        
-        QSpinBox, QComboBox {
-            padding: 5px;
-            border: 1px solid #bdc3c7;
-            border-radius: 4px;
-            background-color: white;
-        }
-        
-        QListWidget {
-            border: 1px solid #bdc3c7;
-            border-radius: 4px;
-            background-color: white;
-        }
-        """
-        
-        self.setStyleSheet(style)
+        # Set variants for specific buttons
+        self.save_btn.setProperty("variant", "success")
+        self.reset_btn.setProperty("variant", "danger")
+        self.add_exclusion_btn.setProperty("variant", "accent")
+        self.remove_exclusion_btn.setProperty("variant", "danger")

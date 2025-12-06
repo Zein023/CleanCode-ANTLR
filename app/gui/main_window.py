@@ -74,19 +74,20 @@ class MainWindow(QMainWindow):
         main_layout = QVBoxLayout()
         central_widget.setLayout(main_layout)
         
-        # Title
-        title_label = QLabel("🐍 Python Clean Code Linter")
-        title_font = QFont("Segoe UI", 20, QFont.Weight.Bold)
-        title_label.setFont(title_font)
-        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        main_layout.addWidget(title_label)
-        
         # Splitter for file list and output
         splitter = QSplitter(Qt.Orientation.Horizontal)
         
         # Left panel - File selection
         left_panel = QWidget()
         left_layout = QVBoxLayout()
+        
+        # Title (moved to left panel)
+        title_label = QLabel("🐍 Python Clean Code Linter")
+        title_font = QFont("Segoe UI", 18, QFont.Weight.Bold)
+        title_label.setFont(title_font)
+        title_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        title_label.setStyleSheet("color: #7aa2f7; padding: 8px;")  # Tokyo Night accent color
+        left_layout.addWidget(title_label)
         left_panel.setLayout(left_layout)
         
         # File selection group
@@ -97,14 +98,17 @@ class MainWindow(QMainWindow):
         button_layout = QHBoxLayout()
         
         self.add_file_btn = QPushButton("Add File")
+        self.add_file_btn.setProperty("variant", "accent")
         self.add_file_btn.clicked.connect(self.add_file)
         button_layout.addWidget(self.add_file_btn)
         
         self.add_folder_btn = QPushButton("Add Folder")
+        self.add_folder_btn.setProperty("variant", "accent")
         self.add_folder_btn.clicked.connect(self.add_folder)
         button_layout.addWidget(self.add_folder_btn)
         
         self.clear_btn = QPushButton("Clear All")
+        self.clear_btn.setProperty("variant", "danger")
         self.clear_btn.clicked.connect(self.clear_files)
         button_layout.addWidget(self.clear_btn)
         
@@ -136,10 +140,12 @@ class MainWindow(QMainWindow):
         action_layout = QHBoxLayout()
         
         self.config_btn = QPushButton("⚙️ Configuration")
+        self.config_btn.setProperty("variant", "accent")
         self.config_btn.clicked.connect(self.open_config_dialog)
         action_layout.addWidget(self.config_btn)
         
         self.run_btn = QPushButton("▶️ Run Linter")
+        self.run_btn.setProperty("variant", "success")
         self.run_btn.clicked.connect(self.run_linter)
         action_layout.addWidget(self.run_btn)
         
@@ -155,6 +161,7 @@ class MainWindow(QMainWindow):
         output_label = QLabel("📋 Linter Output")
         output_font = QFont("Segoe UI", 12, QFont.Weight.Bold)
         output_label.setFont(output_font)
+        output_label.setStyleSheet("color: #7aa2f7;")  # Tokyo Night accent color
         right_layout.addWidget(output_label)
         
         # Output text area
@@ -179,96 +186,25 @@ class MainWindow(QMainWindow):
         self.statusBar().showMessage("Ready")
     
     def apply_modern_style(self):
-        """Apply modern styling to the application"""
-        style = """
-        QMainWindow {
-            background-color: #f5f5f5;
-        }
+        """Apply Tokyo Night styling to the application"""
+        # Load Tokyo Night stylesheet
+        stylesheet_path = os.path.join(
+            os.path.dirname(os.path.dirname(__file__)),
+            'stylesheet',
+            'tokyo_night.qss'
+        )
         
-        QGroupBox {
-            font-weight: bold;
-            border: 2px solid #3498db;
-            border-radius: 8px;
-            margin-top: 10px;
-            padding-top: 10px;
-            background-color: white;
-        }
-        
-        QGroupBox::title {
-            subcontrol-origin: margin;
-            left: 10px;
-            padding: 0 5px 0 5px;
-        }
-        
-        QPushButton {
-            background-color: #3498db;
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 4px;
-            font-weight: bold;
-            min-height: 30px;
-        }
-        
-        QPushButton:hover {
-            background-color: #2980b9;
-        }
-        
-        QPushButton:pressed {
-            background-color: #21618c;
-        }
-        
-        QPushButton#run_btn {
-            background-color: #27ae60;
-        }
-        
-        QPushButton#run_btn:hover {
-            background-color: #229954;
-        }
-        
-        QTextEdit {
-            border: 1px solid #bdc3c7;
-            border-radius: 4px;
-            padding: 8px;
-            background-color: white;
-        }
-        
-        QListWidget {
-            border: 1px solid #bdc3c7;
-            border-radius: 4px;
-            background-color: white;
-        }
-        
-        QCheckBox {
-            spacing: 8px;
-            font-size: 11pt;
-        }
-        
-        QCheckBox::indicator {
-            width: 18px;
-            height: 18px;
-        }
-        
-        QProgressBar {
-            border: 1px solid #bdc3c7;
-            border-radius: 4px;
-            text-align: center;
-            background-color: white;
-        }
-        
-        QProgressBar::chunk {
-            background-color: #3498db;
-            border-radius: 3px;
-        }
-        
-        QStatusBar {
-            background-color: #ecf0f1;
-            color: #2c3e50;
-        }
-        """
-        
-        self.setStyleSheet(style)
-        self.run_btn.setObjectName("run_btn")
+        try:
+            with open(stylesheet_path, 'r', encoding='utf-8') as f:
+                stylesheet = f.read()
+            self.setStyleSheet(stylesheet)
+        except FileNotFoundError:
+            print(f"Warning: Tokyo Night stylesheet not found at {stylesheet_path}")
+            # Fallback to basic dark theme if stylesheet not found
+            self.setStyleSheet("""
+                QMainWindow { background-color: #161821; color: #c0caf5; }
+                QPushButton { background-color: #2a2f45; color: #c0caf5; border-radius: 6px; padding: 6px 10px; }
+            """)
     
     def add_file(self):
         """Add a single Python file"""

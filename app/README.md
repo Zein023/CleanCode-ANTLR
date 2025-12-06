@@ -5,7 +5,8 @@ A modern PyQt6-based GUI application for linting Python code using ANTLR4-genera
 ## Features
 
 ✨ **Modern User Interface**
-- Clean, intuitive PyQt6 interface
+- Beautiful Tokyo Night themed dark interface
+- Clean, intuitive PyQt6 design with Fusion style
 - Real-time progress tracking
 - Multi-threaded linting (non-blocking UI)
 
