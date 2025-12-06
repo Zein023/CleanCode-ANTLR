@@ -1,0 +1,10 @@
+{
+    "max_function_lines": 20,
+    "max_nesting_depth": 5,
+    "max_arguments": 3,
+    "max_cyclomatic_complexity": 5,
+    "naming_convention": {
+        "function": "snake_case",
+        "class": "PascalCase"
+    }
+}
