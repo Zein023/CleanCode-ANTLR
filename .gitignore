@@ -1,1 +1,39 @@
+# ========================
+# ANTLR: Generated files
+# ========================
+.antlr/
+*.interp
+*.tokens
+*.java
+*.class
+
+# Jika kamu generate parser/lexer ke folder khusus:
+# grammar/generated/
+# grammar/output/
+
+# ========================
+# Python
+# ========================
 __pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+venv/
+env/
+
+# ========================
+# IDE / Editor
+# ========================
+# VSCode
+.vscode/
+
+# IntelliJ / PyCharm
+.idea/
+
+# ========================
+# OS
+# ========================
+.DS_Store
+Thumbs.db
