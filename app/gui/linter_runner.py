@@ -17,6 +17,9 @@ from antlr4.tree.Tree import ParseTreeWalker
 from linter.MyListener import AdvancedCleanCodeListener
 from linter.MySemanticVisitor import MySemanticVisitor
 
+# Custom Error Listener to capture lexer/parser errors
+from linter.error_listener import CollectingErrorListener
+
 class LinterRunner:
     """Runs linter checks on Python files"""
     
@@ -101,11 +104,21 @@ class LinterRunner:
             # Parse the file
             input_stream = FileStream(str(file_path), encoding='utf-8')
             lexer = PythonLexer(input_stream)
+            # Conditionally attach custom error listener to lexer
+            lex_error_listener = None
+            if self.config.get('parser_errors_enabled', True):
+                lexer.removeErrorListeners()
+                lex_error_listener = CollectingErrorListener()
+                lexer.addErrorListener(lex_error_listener)
             stream = CommonTokenStream(lexer)
             parser = PythonParser(stream)
             
-            # Remove default error listeners to capture errors
-            parser.removeErrorListeners()
+            # Conditionally attach custom error listener to parser
+            parse_error_listener = None
+            if self.config.get('parser_errors_enabled', True):
+                parser.removeErrorListeners()
+                parse_error_listener = CollectingErrorListener()
+                parser.addErrorListener(parse_error_listener)
             
             # Parse the file
             tree = parser.file_input()
@@ -138,6 +151,12 @@ class LinterRunner:
                 except Exception as e:
                     results['errors'].append(f"Semantic visitor error: {str(e)}")
         
+            # Merge any lexer/parser syntax errors collected
+            if lex_error_listener and lex_error_listener.errors:
+                results['errors'].extend([f"Lexer: {msg}" for msg in lex_error_listener.errors])
+            if parse_error_listener and parse_error_listener.errors:
+                results['errors'].extend([f"Parser: {msg}" for msg in parse_error_listener.errors])
+
         except Exception as e:
             results['errors'].append(f"Parse error: {str(e)}")
         

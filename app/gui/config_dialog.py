@@ -5,7 +5,7 @@ Allows editing of linter configuration settings
 from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QFormLayout, QLabel,
     QSpinBox, QComboBox, QPushButton, QGroupBox, QListWidget,
-    QLineEdit, QMessageBox, QTabWidget, QWidget
+    QLineEdit, QMessageBox, QTabWidget, QWidget, QCheckBox
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
@@ -110,6 +110,18 @@ class ConfigDialog(QDialog):
         
         metrics_group.setLayout(metrics_layout)
         layout.addWidget(metrics_group)
+
+        # Parser/Lexer Errors toggle
+        errors_group = QGroupBox("Parser/Lexer Error Reporting")
+        errors_layout = QVBoxLayout()
+        self.parser_errors_checkbox = QCheckBox("Capture parser/lexer syntax errors")
+        errors_layout.addWidget(self.parser_errors_checkbox)
+        help_errors = QLabel("When enabled, syntax errors from the ANTLR lexer/parser will be collected and shown under Errors.")
+        help_errors.setWordWrap(True)
+        help_errors.setStyleSheet("color: #7f8c8d; padding: 6px;")
+        errors_layout.addWidget(help_errors)
+        errors_group.setLayout(errors_layout)
+        layout.addWidget(errors_group)
         
         # Help text
         help_text = QLabel(
@@ -219,6 +231,8 @@ class ConfigDialog(QDialog):
         self.max_depth_spin.setValue(self.config.get('max_nesting_depth', 5))
         self.max_args_spin.setValue(self.config.get('max_arguments', 3))
         self.max_complexity_spin.setValue(self.config.get('max_cyclomatic_complexity', 5))
+        # Parser/Lexer Errors toggle
+        self.parser_errors_checkbox.setChecked(self.config.get('parser_errors_enabled', True))
         
         # Naming conventions
         naming = self.config.get('naming_convention', {})
@@ -281,6 +295,8 @@ class ConfigDialog(QDialog):
         self.config['max_nesting_depth'] = self.max_depth_spin.value()
         self.config['max_arguments'] = self.max_args_spin.value()
         self.config['max_cyclomatic_complexity'] = self.max_complexity_spin.value()
+        # Parser/Lexer Errors toggle
+        self.config['parser_errors_enabled'] = self.parser_errors_checkbox.isChecked()
         
         # Update naming conventions
         self.config['naming_convention'] = {

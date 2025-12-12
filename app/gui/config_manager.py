@@ -14,6 +14,7 @@ class ConfigManager:
         "max_nesting_depth": 5,
         "max_arguments": 3,
         "max_cyclomatic_complexity": 5,
+        "parser_errors_enabled": True,
         "naming_convention": {
             "function": "snake_case",
             "class": "PascalCase",
