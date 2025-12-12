@@ -8,7 +8,8 @@ from pathlib import Path
 from PyQt6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
     QTextEdit, QLabel, QFileDialog, QProgressBar, QMessageBox,
-    QGroupBox, QCheckBox, QListWidget, QListWidgetItem, QSplitter
+    QGroupBox, QCheckBox, QListWidget, QListWidgetItem, QSplitter,
+    QTreeWidget, QTreeWidgetItem, QFrame, QGridLayout
 )
 from PyQt6.QtCore import Qt, QThread, pyqtSignal, QSize
 from PyQt6.QtGui import QFont, QIcon, QPalette, QColor
@@ -24,7 +25,7 @@ class LinterThread(QThread):
     """Thread for running linter without blocking UI"""
     
     progress = pyqtSignal(int, int, str)  # current, total, filename
-    finished = pyqtSignal(str)  # results
+    finished = pyqtSignal(str, list)  # results text, results data
     error = pyqtSignal(str)  # error message
     
     def __init__(self, linter_runner, file_paths, use_listener, use_semantic):
@@ -44,7 +45,7 @@ class LinterThread(QThread):
                 progress_callback=self.progress.emit
             )
             formatted = self.linter_runner.format_results(results)
-            self.finished.emit(formatted)
+            self.finished.emit(formatted, results)
         except Exception as e:
             self.error.emit(str(e))
 
@@ -153,22 +154,43 @@ class MainWindow(QMainWindow):
         
         splitter.addWidget(left_panel)
         
-        # Right panel - Output
+        # Right panel - Results
         right_panel = QWidget()
         right_layout = QVBoxLayout()
         right_panel.setLayout(right_layout)
         
-        output_label = QLabel("📋 Linter Output")
+        output_label = QLabel("📊 Analysis Results")
         output_font = QFont("Segoe UI", 12, QFont.Weight.Bold)
         output_label.setFont(output_font)
         output_label.setStyleSheet("color: #7aa2f7;")  # Tokyo Night accent color
         right_layout.addWidget(output_label)
         
-        # Output text area
-        self.output_text = QTextEdit()
-        self.output_text.setReadOnly(True)
-        self.output_text.setFont(QFont("Consolas", 10))
-        right_layout.addWidget(self.output_text)
+        # Statistics panel
+        stats_frame = QFrame()
+        stats_frame.setFrameShape(QFrame.Shape.StyledPanel)
+        stats_layout = QGridLayout()
+        stats_frame.setLayout(stats_layout)
+        
+        # Create statistic labels
+        self.stat_files = self.create_stat_widget("📁", "Files", "0")
+        self.stat_violations = self.create_stat_widget("⚠️", "Violations", "0")
+        self.stat_semantic = self.create_stat_widget("🔍", "Semantic", "0")
+        self.stat_errors = self.create_stat_widget("❌", "Errors", "0")
+        
+        stats_layout.addWidget(self.stat_files, 0, 0)
+        stats_layout.addWidget(self.stat_violations, 0, 1)
+        stats_layout.addWidget(self.stat_semantic, 0, 2)
+        stats_layout.addWidget(self.stat_errors, 0, 3)
+        
+        right_layout.addWidget(stats_frame)
+        
+        # Results tree
+        self.results_tree = QTreeWidget()
+        self.results_tree.setHeaderLabels(["Issue Type", "Location", "Description"])
+        self.results_tree.setColumnWidth(0, 150)
+        self.results_tree.setColumnWidth(1, 100)
+        self.results_tree.setAlternatingRowColors(True)
+        right_layout.addWidget(self.results_tree)
         
         splitter.addWidget(right_panel)
         
@@ -205,6 +227,160 @@ class MainWindow(QMainWindow):
                 QMainWindow { background-color: #161821; color: #c0caf5; }
                 QPushButton { background-color: #2a2f45; color: #c0caf5; border-radius: 6px; padding: 6px 10px; }
             """)
+    
+    def create_stat_widget(self, icon, label, value):
+        """Create a statistic display widget"""
+        widget = QGroupBox()
+        layout = QVBoxLayout()
+        
+        # Icon and value
+        value_label = QLabel(f"{icon} {value}")
+        value_label.setFont(QFont("Segoe UI", 18, QFont.Weight.Bold))
+        value_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        value_label.setStyleSheet("color: #7aa2f7;")
+        value_label.setObjectName(f"stat_value_{label}")
+        layout.addWidget(value_label)
+        
+        # Label
+        name_label = QLabel(label)
+        name_label.setFont(QFont("Segoe UI", 10))
+        name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        name_label.setStyleSheet("color: #9fb2ff;")
+        layout.addWidget(name_label)
+        
+        widget.setLayout(layout)
+        return widget
+    
+    def update_statistics(self, results_data):
+        """Update statistics panel with results data"""
+        total_files = len(results_data)
+        total_violations = sum(len(r['listener_violations']) for r in results_data)
+        total_semantic = sum(len([line for line in r['semantic_output'] 
+                                   if '❌' in line or 'ERROR' in line]) 
+                             for r in results_data)
+        total_errors = sum(len(r['errors']) for r in results_data)
+        
+        # Update stat widgets
+        self.update_stat_value(self.stat_files, "📁", total_files)
+        self.update_stat_value(self.stat_violations, "⚠️", total_violations)
+        self.update_stat_value(self.stat_semantic, "🔍", total_semantic)
+        self.update_stat_value(self.stat_errors, "❌", total_errors)
+    
+    def update_stat_value(self, widget, icon, value):
+        """Update a single stat widget value"""
+        # Find the value label
+        for child in widget.findChildren(QLabel):
+            if child.objectName().startswith("stat_value"):
+                child.setText(f"{icon} {value}")
+                # Color code based on value
+                if value == 0:
+                    child.setStyleSheet("color: #9ece6a;")  # Green for zero
+                elif value < 5:
+                    child.setStyleSheet("color: #e0af68;")  # Yellow for few
+                else:
+                    child.setStyleSheet("color: #f7768e;")  # Red for many
+                break
+    
+    def populate_results_tree(self, results_data):
+        """Populate the results tree with linting data"""
+        self.results_tree.clear()
+        
+        if not results_data:
+            return
+        
+        for result in results_data:
+            file_path = Path(result['file'])
+            
+            # Skip files with no issues
+            if not (result['listener_violations'] or result['semantic_output'] or result['errors']):
+                continue
+            
+            # Create file item
+            file_item = QTreeWidgetItem(self.results_tree)
+            file_item.setText(0, f"📄 {file_path.name}")
+            file_item.setText(2, str(file_path))
+            file_item.setExpanded(True)
+            
+            # Add listener violations
+            if result['listener_violations']:
+                violations_item = QTreeWidgetItem(file_item)
+                violations_item.setText(0, "⚠️ Clean Code Violations")
+                violations_item.setText(1, f"{len(result['listener_violations'])} issues")
+                violations_item.setExpanded(True)
+                
+                for violation in result['listener_violations']:
+                    # Parse violation to extract line number and message
+                    violation_item = QTreeWidgetItem(violations_item)
+                    
+                    if '[Baris' in violation or 'Line' in violation:
+                        # Extract line number
+                        import re
+                        line_match = re.search(r'\[Baris (\d+)\]|Line (\d+)', violation)
+                        if line_match:
+                            line_num = line_match.group(1) or line_match.group(2)
+                            violation_item.setText(1, f"Line {line_num}")
+                        
+                        # Clean up message
+                        msg = violation.replace('⚠️', '').strip()
+                        msg = re.sub(r'\[Baris \d+\]', '', msg).strip()
+                        
+                        # Categorize
+                        if 'Naming' in msg or 'snake_case' in msg or 'PascalCase' in msg:
+                            violation_item.setText(0, "🏷️ Naming")
+                        elif 'Kompleksitas' in msg or 'complexity' in msg.lower():
+                            violation_item.setText(0, "🧩 Complexity")
+                        elif 'Panjang' in msg or 'length' in msg.lower():
+                            violation_item.setText(0, "📏 Length")
+                        elif 'Argumen' in msg or 'parameter' in msg.lower():
+                            violation_item.setText(0, "📝 Parameters")
+                        elif 'Nesting' in msg or 'dalam' in msg.lower():
+                            violation_item.setText(0, "📐 Nesting")
+                        else:
+                            violation_item.setText(0, "⚠️ Other")
+                        
+                        violation_item.setText(2, msg)
+                    else:
+                        violation_item.setText(0, "⚠️ Violation")
+                        violation_item.setText(2, violation)
+            
+            # Add semantic issues
+            if result['semantic_output']:
+                semantic_issues = [line for line in result['semantic_output'] 
+                                   if line.strip() and ('❌' in line or 'ERROR' in line)]
+                
+                if semantic_issues:
+                    semantic_item = QTreeWidgetItem(file_item)
+                    semantic_item.setText(0, "🔍 Semantic Analysis")
+                    semantic_item.setText(1, f"{len(semantic_issues)} issues")
+                    semantic_item.setExpanded(True)
+                    
+                    for issue in semantic_issues:
+                        issue_item = QTreeWidgetItem(semantic_item)
+                        issue_item.setText(0, "❌ Error")
+                        
+                        # Try to extract line info
+                        clean_issue = issue.replace('❌', '').replace('[ERROR]', '').strip()
+                        issue_item.setText(2, clean_issue)
+            
+            # Add parse errors
+            if result['errors']:
+                errors_item = QTreeWidgetItem(file_item)
+                errors_item.setText(0, "🚫 Parse Errors")
+                errors_item.setText(1, f"{len(result['errors'])} errors")
+                errors_item.setExpanded(True)
+                
+                for error in result['errors']:
+                    error_item = QTreeWidgetItem(errors_item)
+                    error_item.setText(0, "❌ Error")
+                    error_item.setText(2, error)
+        
+        # If no issues at all, show success message
+        if self.results_tree.topLevelItemCount() == 0:
+            success_item = QTreeWidgetItem(self.results_tree)
+            success_item.setText(0, "✅ All Clear!")
+            success_item.setText(2, "No issues found in any files")
+            success_item.setForeground(0, QColor("#9ece6a"))
+            success_item.setForeground(2, QColor("#9ece6a"))
     
     def add_file(self):
         """Add a single Python file"""
@@ -306,9 +482,8 @@ class MainWindow(QMainWindow):
         self.progress_bar.setVisible(True)
         self.progress_bar.setValue(0)
         
-        # Clear output
-        self.output_text.clear()
-        self.output_text.append("🔍 Running linter...\n")
+        # Clear results
+        self.results_tree.clear()
         
         # Start linter thread
         self.linter_thread = LinterThread(
@@ -331,10 +506,13 @@ class MainWindow(QMainWindow):
         self.progress_bar.setValue(progress)
         self.statusBar().showMessage(f"Processing {current}/{total}: {Path(filename).name}")
     
-    def linter_finished(self, results):
+    def linter_finished(self, results_text, results_data):
         """Handle linter completion"""
-        self.output_text.clear()
-        self.output_text.append(results)
+        # Update statistics
+        self.update_statistics(results_data)
+        
+        # Populate results tree
+        self.populate_results_tree(results_data)
         
         # Re-enable buttons
         self.run_btn.setEnabled(True)
@@ -356,8 +534,10 @@ class MainWindow(QMainWindow):
     
     def linter_error(self, error_msg):
         """Handle linter error"""
-        self.output_text.clear()
-        self.output_text.append(f"❌ Error occurred:\n{error_msg}")
+        self.results_tree.clear()
+        error_item = QTreeWidgetItem(self.results_tree)
+        error_item.setText(0, "❌ Error")
+        error_item.setText(2, error_msg)
         
         # Re-enable buttons
         self.run_btn.setEnabled(True)
