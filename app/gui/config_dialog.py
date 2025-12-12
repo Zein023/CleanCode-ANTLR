@@ -139,17 +139,17 @@ class ConfigDialog(QDialog):
         
         # Function naming
         self.func_naming_combo = QComboBox()
-        self.func_naming_combo.addItems(["snake_case", "camelCase", "PascalCase"])
+        self.func_naming_combo.addItems(["none", "snake_case", "camelCase", "PascalCase"])
         naming_layout.addRow("Function Names:", self.func_naming_combo)
         
         # Class naming
         self.class_naming_combo = QComboBox()
-        self.class_naming_combo.addItems(["PascalCase", "snake_case", "camelCase"])
+        self.class_naming_combo.addItems(["none", "PascalCase", "snake_case", "camelCase"])
         naming_layout.addRow("Class Names:", self.class_naming_combo)
         
         # Variable naming
         self.var_naming_combo = QComboBox()
-        self.var_naming_combo.addItems(["snake_case", "camelCase", "PascalCase"])
+        self.var_naming_combo.addItems(["none", "snake_case", "camelCase", "PascalCase"])
         naming_layout.addRow("Variable Names:", self.var_naming_combo)
         
         naming_group.setLayout(naming_layout)
@@ -158,6 +158,7 @@ class ConfigDialog(QDialog):
         # Examples
         examples = QLabel(
             "Naming Convention Examples:\n\n"
+            "• none: Any naming style allowed (no checks)\n"
             "• snake_case: my_function_name\n"
             "• camelCase: myFunctionName\n"
             "• PascalCase: MyFunctionName"

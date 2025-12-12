@@ -60,11 +60,19 @@ class AdvancedCleanCodeListener(PythonParserListener):
         line = ctx.start.line
         self.scopes.append(set())
 
-        # Cek Snake Case
+        # Cek Snake Case (skip if naming convention is 'none')
         if func_name != "unknown" and func_name not in self.keywords:
-            if self.config['naming_convention']['function'] == 'snake_case':
-                if not re.match(r"^[a-z_][a-z0-9_]*$", func_name):
-                    self.log(line, f"Naming: Fungsi '{func_name}' harus snake_case.")
+            convention = self.config['naming_convention']['function']
+            if convention != 'none':
+                if convention == 'snake_case':
+                    if not re.match(r"^[a-z_][a-z0-9_]*$", func_name):
+                        self.log(line, f"Naming: Fungsi '{func_name}' harus snake_case.")
+                elif convention == 'camelCase':
+                    if not re.match(r"^[a-z][a-zA-Z0-9]*$", func_name):
+                        self.log(line, f"Naming: Fungsi '{func_name}' harus camelCase.")
+                elif convention == 'PascalCase':
+                    if not re.match(r"^[A-Z][a-zA-Z0-9]*$", func_name):
+                        self.log(line, f"Naming: Fungsi '{func_name}' harus PascalCase.")
 
         # Simpan metrik
         self.func_stack.append({
@@ -106,11 +114,20 @@ class AdvancedCleanCodeListener(PythonParserListener):
             if var_name in builtins:
                 self.log(line, f"Shadowing Built-in: Variable '{var_name}' merusak fungsi bawaan Python.")
             
-            # Cek Naming (Snake Case)
-            elif self.config['naming_convention']['variable'] == 'snake_case':
-                 # Izinkan huruf besar semua (CONSTANT)
-                 if not re.match(r"^[a-z_][a-z0-9_]*$", var_name) and not var_name.isupper():
-                     self.log(line, f"Naming: Variable '{var_name}' harus snake_case.")
+            # Cek Naming (skip if naming convention is 'none')
+            else:
+                convention = self.config['naming_convention']['variable']
+                if convention != 'none':
+                    if convention == 'snake_case':
+                        # Izinkan huruf besar semua (CONSTANT)
+                        if not re.match(r"^[a-z_][a-z0-9_]*$", var_name) and not var_name.isupper():
+                            self.log(line, f"Naming: Variable '{var_name}' harus snake_case.")
+                    elif convention == 'camelCase':
+                        if not re.match(r"^[a-z][a-zA-Z0-9]*$", var_name):
+                            self.log(line, f"Naming: Variable '{var_name}' harus camelCase.")
+                    elif convention == 'PascalCase':
+                        if not re.match(r"^[A-Z][a-zA-Z0-9]*$", var_name):
+                            self.log(line, f"Naming: Variable '{var_name}' harus PascalCase.")
 
     # -------------------------------
     # 3. PARAMETERS
