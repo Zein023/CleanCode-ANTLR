@@ -98,7 +98,7 @@ class MainWindow(QMainWindow):
         # Buttons for file selection
         button_layout = QHBoxLayout()
         
-        self.add_file_btn = QPushButton("Add File")
+        self.add_file_btn = QPushButton("Add File(s)")
         self.add_file_btn.setProperty("variant", "accent")
         self.add_file_btn.clicked.connect(self.add_file)
         button_layout.addWidget(self.add_file_btn)
@@ -358,7 +358,14 @@ class MainWindow(QMainWindow):
                         issue_item = QTreeWidgetItem(semantic_item)
                         issue_item.setText(0, "❌ Error")
                         
-                        # Try to extract line info
+                        # Extract line number if present
+                        import re
+                        line_match = re.search(r'\(line (\d+)\)', issue)
+                        if line_match:
+                            line_num = line_match.group(1)
+                            issue_item.setText(1, f"Line {line_num}")
+                        
+                        # Clean up message
                         clean_issue = issue.replace('❌', '').replace('[ERROR]', '').strip()
                         issue_item.setText(2, clean_issue)
             
@@ -383,29 +390,40 @@ class MainWindow(QMainWindow):
             success_item.setForeground(2, QColor("#9ece6a"))
     
     def add_file(self):
-        """Add a single Python file"""
-        file_path, _ = QFileDialog.getOpenFileName(
+        """Add one or more Python files"""
+        file_paths, _ = QFileDialog.getOpenFileNames(
             self,
-            "Select Python File",
+            "Select Python File(s)",
             "",
             "Python Files (*.py)"
         )
         
-        if file_path:
-            path = Path(file_path)
+        if file_paths:
             exclude_patterns = self.config_manager.get_exclude_patterns()
+            added_count = 0
+            excluded_count = 0
             
-            # Check if should be excluded
-            if not self.linter_runner._should_exclude(path, exclude_patterns):
-                if path not in self.selected_paths:
-                    self.selected_paths.append(path)
-                    self.file_list.addItem(str(path))
-                    self.statusBar().showMessage(f"Added: {path.name}")
-            else:
+            for file_path in file_paths:
+                path = Path(file_path)
+                
+                # Check if should be excluded
+                if not self.linter_runner._should_exclude(path, exclude_patterns):
+                    if path not in self.selected_paths:
+                        self.selected_paths.append(path)
+                        self.file_list.addItem(str(path))
+                        added_count += 1
+                else:
+                    excluded_count += 1
+            
+            # Show status message
+            if added_count > 0:
+                self.statusBar().showMessage(f"Added {added_count} file(s)")
+            
+            if excluded_count > 0:
                 QMessageBox.warning(
                     self,
-                    "File Excluded",
-                    f"File matches exclude pattern and was not added."
+                    "Files Excluded",
+                    f"{excluded_count} file(s) matched exclude patterns and were not added."
                 )
     
     def add_folder(self):
