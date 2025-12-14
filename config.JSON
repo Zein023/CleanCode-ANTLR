@@ -9,6 +9,12 @@
         "class": "PascalCase",
         "variable": "snake_case"
     },
+    "semantic_checker": {
+        "enabled": true,
+        "ignore_pascalcase": false,
+        "ignore_uppercase": false,
+        "strict_import_tracking": true
+    },
     "exclude": [
         "__pycache__",
         "generated",

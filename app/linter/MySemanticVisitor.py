@@ -38,9 +38,22 @@ class MySemanticVisitor(PythonParserVisitor):
     - Report undefined variable access
     """
     
-    def __init__(self):
+    def __init__(self, config=None):
         self.current_scope = Scope("Global")
         self.global_scope = self.current_scope
+        
+        # Load semantic checker configuration
+        if config and 'semantic_checker' in config:
+            semantic_config = config['semantic_checker']
+            self.ignore_pascalcase = semantic_config.get('ignore_pascalcase', False)
+            self.ignore_uppercase = semantic_config.get('ignore_uppercase', False)
+            self.strict_import_tracking = semantic_config.get('strict_import_tracking', True)
+        else:
+            # Default settings
+            self.ignore_pascalcase = False
+            self.ignore_uppercase = False
+            self.strict_import_tracking = True
+        
         self._init_builtins()
     
     def _init_builtins(self):
@@ -554,7 +567,7 @@ class MySemanticVisitor(PythonParserVisitor):
     def visitAtom(self, ctx):
         """
         Check NAME tokens in atoms (simple variable references).
-        Report undefined variables regardless of casing.
+        Report undefined variables based on configuration.
         """
         text = ctx.getText()
         
@@ -567,10 +580,21 @@ class MySemanticVisitor(PythonParserVisitor):
                 if text not in ['None', 'True', 'False', 'self', '__name__', '__main__']:
                     # Check if defined
                     if not self.current_scope.resolve(text):
-                        # Report error with line number
-                        line_num = self._get_line_number(ctx)
-                        location = f"line {line_num}" if line_num else "unknown location"
-                        print(f"  ❌ [ERROR] Undefined variable: '{text}' ({location}) in scope '{self.current_scope.name}'")
+                        # Apply ignore rules based on configuration
+                        should_ignore = False
+                        
+                        if self.ignore_pascalcase and text[0].isupper() and not text.isupper():
+                            # PascalCase check
+                            should_ignore = True
+                        elif self.ignore_uppercase and text.isupper():
+                            # UPPERCASE check
+                            should_ignore = True
+                        
+                        if not should_ignore:
+                            # Report error with line number
+                            line_num = self._get_line_number(ctx)
+                            location = f"line {line_num}" if line_num else "unknown location"
+                            print(f"  ❌ [ERROR] Undefined variable: '{text}' ({location}) in scope '{self.current_scope.name}'")
         except:
             pass
         

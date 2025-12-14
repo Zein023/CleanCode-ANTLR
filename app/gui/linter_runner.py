@@ -142,7 +142,7 @@ class LinterRunner:
                     
                     f = io.StringIO()
                     with redirect_stdout(f):
-                        visitor = MySemanticVisitor()
+                        visitor = MySemanticVisitor(self.config)
                         visitor.visit(tree)
                     
                     semantic_output = f.getvalue()

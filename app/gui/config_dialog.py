@@ -48,6 +48,10 @@ class ConfigDialog(QDialog):
         naming_tab = self.create_naming_tab()
         tabs.addTab(naming_tab, "📝 Naming")
         
+        # Semantic tab
+        semantic_tab = self.create_semantic_tab()
+        tabs.addTab(semantic_tab, "🔍 Semantic")
+        
         # Exclusions tab
         exclusions_tab = self.create_exclusions_tab()
         tabs.addTab(exclusions_tab, "🚫 Exclusions")
@@ -183,6 +187,60 @@ class ConfigDialog(QDialog):
         
         return tab
     
+    def create_semantic_tab(self):
+        """Create semantic checker configuration tab"""
+        tab = QWidget()
+        layout = QVBoxLayout()
+        tab.setLayout(layout)
+        
+        # Semantic checker group
+        semantic_group = QGroupBox("Semantic Checker Settings")
+        semantic_layout = QVBoxLayout()
+        
+        # Ignore PascalCase
+        self.ignore_pascalcase_check = QCheckBox("Ignore Undefined PascalCase Names")
+        self.ignore_pascalcase_check.setToolTip(
+            "When enabled, PascalCase identifiers (e.g., MyClass, MyFunction) "
+            "won't be reported as undefined, assuming they're from external libraries"
+        )
+        semantic_layout.addWidget(self.ignore_pascalcase_check)
+        
+        # Ignore UPPERCASE
+        self.ignore_uppercase_check = QCheckBox("Ignore Undefined UPPERCASE Names")
+        self.ignore_uppercase_check.setToolTip(
+            "When enabled, UPPERCASE identifiers (e.g., MY_CONSTANT, API_KEY) "
+            "won't be reported as undefined"
+        )
+        semantic_layout.addWidget(self.ignore_uppercase_check)
+        
+        # Strict import tracking
+        self.strict_import_check = QCheckBox("Strict Import Tracking")
+        self.strict_import_check.setChecked(True)
+        self.strict_import_check.setToolTip(
+            "When enabled, only explicitly imported names are considered defined. "
+            "Disable for more lenient checking"
+        )
+        semantic_layout.addWidget(self.strict_import_check)
+        
+        semantic_group.setLayout(semantic_layout)
+        layout.addWidget(semantic_group)
+        
+        # Help text
+        help_text = QLabel(
+            "Semantic Checker Options:\n\n"
+            "• Ignore PascalCase: Useful if you use external libraries with classes\n"
+            "• Ignore UPPERCASE: Useful for constants from external sources\n"
+            "• Strict Import Tracking: Requires explicit imports for identifiers\n\n"
+            "Note: Enable/Disable semantic analysis in the Linter Options"
+        )
+        help_text.setWordWrap(True)
+        help_text.setStyleSheet("color: #7f8c8d; padding: 10px;")
+        layout.addWidget(help_text)
+        
+        layout.addStretch()
+        
+        return tab
+    
     def create_exclusions_tab(self):
         """Create exclusions configuration tab"""
         tab = QWidget()
@@ -246,6 +304,12 @@ class ConfigDialog(QDialog):
         var_naming = naming.get('variable', 'snake_case')
         self.var_naming_combo.setCurrentText(var_naming)
         
+        # Semantic checker settings
+        semantic = self.config.get('semantic_checker', {})
+        self.ignore_pascalcase_check.setChecked(semantic.get('ignore_pascalcase', False))
+        self.ignore_uppercase_check.setChecked(semantic.get('ignore_uppercase', False))
+        self.strict_import_check.setChecked(semantic.get('strict_import_tracking', True))
+        
         # Exclusions
         self.exclusions_list.clear()
         for pattern in self.config.get('exclude', []):
@@ -303,6 +367,13 @@ class ConfigDialog(QDialog):
             'function': self.func_naming_combo.currentText(),
             'class': self.class_naming_combo.currentText(),
             'variable': self.var_naming_combo.currentText()
+        }
+        
+        # Update semantic checker settings
+        self.config['semantic_checker'] = {
+            'ignore_pascalcase': self.ignore_pascalcase_check.isChecked(),
+            'ignore_uppercase': self.ignore_uppercase_check.isChecked(),
+            'strict_import_tracking': self.strict_import_check.isChecked()
         }
         
         # Update exclusions

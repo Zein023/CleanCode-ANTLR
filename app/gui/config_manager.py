@@ -20,6 +20,11 @@ class ConfigManager:
             "class": "PascalCase",
             "variable": "snake_case"
         },
+        "semantic_checker": {
+            "ignore_pascalcase": False,
+            "ignore_uppercase": False,
+            "strict_import_tracking": True
+        },
         "exclude": [
             "__pycache__",
             "generated"
