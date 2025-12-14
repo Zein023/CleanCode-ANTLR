@@ -3,8 +3,15 @@
     "max_nesting_depth": 5,
     "max_arguments": 3,
     "max_cyclomatic_complexity": 5,
+    "parser_errors_enabled": true,
     "naming_convention": {
         "function": "snake_case",
-        "class": "PascalCase"
-    }
+        "class": "PascalCase",
+        "variable": "snake_case"
+    },
+    "exclude": [
+        "__pycache__",
+        "generated",
+        ".antlr"
+    ]
 }

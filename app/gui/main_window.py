@@ -21,6 +21,19 @@ from gui.config_manager import ConfigManager
 from gui.linter_runner import LinterRunner
 from gui.config_dialog import ConfigDialog
 
+class ClickableStatWidget(QGroupBox):
+    """Custom QGroupBox that emits a signal when clicked"""
+    clicked = pyqtSignal(str)
+    
+    def __init__(self, filter_type):
+        super().__init__()
+        self.filter_type = filter_type
+    
+    def mouseReleaseEvent(self, event):
+        """Handle mouse click"""
+        self.clicked.emit(self.filter_type)
+        super().mouseReleaseEvent(event)
+
 class LinterThread(QThread):
     """Thread for running linter without blocking UI"""
     
@@ -58,6 +71,8 @@ class MainWindow(QMainWindow):
         self.linter_runner = LinterRunner(self.config_manager.get_config())
         self.selected_paths = []
         self.linter_thread = None
+        self.current_results_data = []  # Store raw results for filtering
+        self.current_filter = "all"  # Track current filter
         
         self.init_ui()
         self.apply_modern_style()
@@ -172,10 +187,10 @@ class MainWindow(QMainWindow):
         stats_frame.setLayout(stats_layout)
         
         # Create statistic labels
-        self.stat_files = self.create_stat_widget("📁", "Files", "0")
-        self.stat_violations = self.create_stat_widget("⚠️", "Violations", "0")
-        self.stat_semantic = self.create_stat_widget("🔍", "Semantic", "0")
-        self.stat_errors = self.create_stat_widget("❌", "Errors", "0")
+        self.stat_files = self.create_stat_widget("📁", "Files", "0", None)
+        self.stat_violations = self.create_stat_widget("⚠️", "Violations", "0", "violations")
+        self.stat_semantic = self.create_stat_widget("🔍", "Semantic", "0", "semantic")
+        self.stat_errors = self.create_stat_widget("❌", "Errors", "0", "errors")
         
         stats_layout.addWidget(self.stat_files, 0, 0)
         stats_layout.addWidget(self.stat_violations, 0, 1)
@@ -228,9 +243,9 @@ class MainWindow(QMainWindow):
                 QPushButton { background-color: #2a2f45; color: #c0caf5; border-radius: 6px; padding: 6px 10px; }
             """)
     
-    def create_stat_widget(self, icon, label, value):
+    def create_stat_widget(self, icon, label, value, filter_type=None):
         """Create a statistic display widget"""
-        widget = QGroupBox()
+        widget = ClickableStatWidget(filter_type) if filter_type else QGroupBox()
         layout = QVBoxLayout()
         
         # Icon and value
@@ -249,6 +264,13 @@ class MainWindow(QMainWindow):
         layout.addWidget(name_label)
         
         widget.setLayout(layout)
+        
+        # Connect click signal if this is a clickable widget
+        if filter_type and isinstance(widget, ClickableStatWidget):
+            widget.clicked.connect(self.filter_results)
+            # Add cursor style to indicate clickability
+            widget.setCursor(Qt.CursorShape.PointingHandCursor)
+        
         return widget
     
     def update_statistics(self, results_data):
@@ -281,7 +303,7 @@ class MainWindow(QMainWindow):
                     child.setStyleSheet("color: #f7768e;")  # Red for many
                 break
     
-    def populate_results_tree(self, results_data):
+    def populate_results_tree(self, results_data, filter_type="all"):
         """Populate the results tree with linting data"""
         self.results_tree.clear()
         
@@ -291,8 +313,24 @@ class MainWindow(QMainWindow):
         for result in results_data:
             file_path = Path(result['file'])
             
-            # Skip files with no issues
-            if not (result['listener_violations'] or result['semantic_output'] or result['errors']):
+            # Skip files with no issues (considering filter)
+            has_violations = bool(result['listener_violations'])
+            has_semantic = bool([line for line in result['semantic_output'] 
+                                 if '❌' in line or 'ERROR' in line])
+            has_errors = bool(result['errors'])
+            
+            # Check if file should be shown based on filter
+            should_show = False
+            if filter_type == "all":
+                should_show = has_violations or has_semantic or has_errors
+            elif filter_type == "violations":
+                should_show = has_violations
+            elif filter_type == "semantic":
+                should_show = has_semantic
+            elif filter_type == "errors":
+                should_show = has_errors
+            
+            if not should_show:
                 continue
             
             # Create file item
@@ -302,7 +340,7 @@ class MainWindow(QMainWindow):
             file_item.setExpanded(True)
             
             # Add listener violations
-            if result['listener_violations']:
+            if (filter_type == "all" or filter_type == "violations") and result['listener_violations']:
                 violations_item = QTreeWidgetItem(file_item)
                 violations_item.setText(0, "⚠️ Clean Code Violations")
                 violations_item.setText(1, f"{len(result['listener_violations'])} issues")
@@ -344,7 +382,7 @@ class MainWindow(QMainWindow):
                         violation_item.setText(2, violation)
             
             # Add semantic issues
-            if result['semantic_output']:
+            if (filter_type == "all" or filter_type == "semantic") and result['semantic_output']:
                 semantic_issues = [line for line in result['semantic_output'] 
                                    if line.strip() and ('❌' in line or 'ERROR' in line)]
                 
@@ -370,7 +408,7 @@ class MainWindow(QMainWindow):
                         issue_item.setText(2, clean_issue)
             
             # Add parse errors
-            if result['errors']:
+            if (filter_type == "all" or filter_type == "errors") and result['errors']:
                 errors_item = QTreeWidgetItem(file_item)
                 errors_item.setText(0, "🚫 Parse Errors")
                 errors_item.setText(1, f"{len(result['errors'])} errors")
@@ -381,11 +419,11 @@ class MainWindow(QMainWindow):
                     error_item.setText(0, "❌ Error")
                     error_item.setText(2, error)
         
-        # If no issues at all, show success message
+        # If no issues at all after filtering, show message
         if self.results_tree.topLevelItemCount() == 0:
             success_item = QTreeWidgetItem(self.results_tree)
-            success_item.setText(0, "✅ All Clear!")
-            success_item.setText(2, "No issues found in any files")
+            success_item.setText(0, "✅ No Issues Found")
+            success_item.setText(2, f"No {filter_type} issues found in selected files")
             success_item.setForeground(0, QColor("#9ece6a"))
             success_item.setForeground(2, QColor("#9ece6a"))
     
@@ -524,13 +562,28 @@ class MainWindow(QMainWindow):
         self.progress_bar.setValue(progress)
         self.statusBar().showMessage(f"Processing {current}/{total}: {Path(filename).name}")
     
+    def filter_results(self, filter_type):
+        """Filter the results tree by issue type. Click same filter to remove filter."""
+        # If clicking the same filter, toggle it off (show all)
+        if self.current_filter == filter_type:
+            self.current_filter = "all"
+        else:
+            self.current_filter = filter_type
+        
+        # Repopulate tree with filter
+        self.populate_results_tree(self.current_results_data, filter_type=self.current_filter)
+    
     def linter_finished(self, results_text, results_data):
         """Handle linter completion"""
+        # Store raw results for filtering
+        self.current_results_data = results_data
+        self.current_filter = "all"
+        
         # Update statistics
         self.update_statistics(results_data)
         
-        # Populate results tree
-        self.populate_results_tree(results_data)
+        # Populate results tree with all issues
+        self.populate_results_tree(results_data, filter_type="all")
         
         # Re-enable buttons
         self.run_btn.setEnabled(True)
