@@ -2,33 +2,49 @@ import sys
 from antlr4 import *
 from PythonLexer import PythonLexer
 from PythonParser import PythonParser
-from MySemanticVisitor import MySemanticVisitor
+# Pastikan file visitor perbaikan sebelumnya disimpan dengan nama MySemanticVisitor.py
+from MySemanticVisitor import MySemanticVisitor 
 
 def main():
-    input_filename = "test_code.py" # Nama file yang ingin dites
+    # Nama file yang akan dianalisis
+    input_filename = "test_code.py"
     
-    print(f"--- Membaca file: {input_filename} ---")
+    print(f"{'='*40}")
+    print(f"SEMANTIC ANALYZER: {input_filename}")
+    print(f"{'='*40}")
 
     try:
-        # GANTI InputStream MENJADI FileStream
-        # encoding='utf-8' penting agar bisa baca karakter khusus
-        input_stream = FileStream(input_filename, encoding='utf-8')
-        
-        # 1. Lexer
+        # 1. Membaca File (Cara Aman untuk ANTLR v4.13+)
+        # Kita baca manual pakai open(), lalu masukkan ke InputStream
+        with open(input_filename, "r", encoding='utf-8') as f:
+            file_content = f.read()
+            input_stream = InputStream(file_content)
+
+        # 2. Lexer Analysis
         lexer = PythonLexer(input_stream)
         stream = CommonTokenStream(lexer)
-        
-        # 2. Parser
+
+        # 3. Parser Analysis
         parser = PythonParser(stream)
-        tree = parser.file_input()
         
-        # 3. Semantic Visitor
-        print("--- HASIL PENGECEKAN SEMANTIK ---")
+        # 'file_input' adalah start rule standar untuk grammar Python3
+        # Jika error "AttributeError", cek nama rule paling atas di file .g4 Anda
+        tree = parser.file_input()
+
+        # 4. Semantic Visitor Execution
+        print("\n[STEP 1] Memulai Penelusuran Pohon (Tree Walk)...\n")
         visitor = MySemanticVisitor()
         visitor.visit(tree)
-        
+
+        print("\n" + "="*40)
+        print("ANALISIS SELESAI")
+        print("Jika tidak ada pesan [ERROR], berarti kode aman secara semantik dasar.")
+        print("="*40)
+
     except FileNotFoundError:
-        print(f"Error: File '{input_filename}' tidak ditemukan!")
+        print(f"FATAL ERROR: File '{input_filename}' tidak ditemukan.")
+    except Exception as e:
+        print(f"TERJADI ERROR SISTEM: {e}")
 
 if __name__ == '__main__':
     main()
