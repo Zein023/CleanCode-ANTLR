@@ -14,8 +14,7 @@ def main():
     app.setStyle('Fusion')
     
     # Set application metadata
-    app.setApplicationName("Python Clean Code Linter")
-    app.setOrganizationName("CleanCode")
+    app.setApplicationName("PyLinter")
     app.setApplicationVersion("1.0.0")
     
     # Create and show main window

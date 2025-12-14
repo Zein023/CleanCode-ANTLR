@@ -64,7 +64,7 @@ class MainWindow(QMainWindow):
     
     def init_ui(self):
         """Initialize user interface"""
-        self.setWindowTitle("Python Clean Code Linter")
+        self.setWindowTitle("PyLinter")
         self.setGeometry(100, 100, 1200, 800)
         
         # Central widget
@@ -83,7 +83,7 @@ class MainWindow(QMainWindow):
         left_layout = QVBoxLayout()
         
         # Title (moved to left panel)
-        title_label = QLabel("🐍 Python Clean Code Linter")
+        title_label = QLabel("🐍 PyLinter")
         title_font = QFont("Segoe UI", 18, QFont.Weight.Bold)
         title_label.setFont(title_font)
         title_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
