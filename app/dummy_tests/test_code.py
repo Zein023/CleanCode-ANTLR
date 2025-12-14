@@ -1,4 +1,5 @@
 # test_code.py
+from antlr4 import risky_operation, ErrorNode
 
 # 1. Shadowing Built-in
 list = [1, 2, 3] 
@@ -65,6 +66,9 @@ def main():
     print(b)
     print(z) 
 
+def error_node():
+    pass
+
 def complexUndefinedVariables():
     res = [i + j for i in range(5)]
     res = [k for i in range(j for j in range(2))]
@@ -84,10 +88,11 @@ def complexUndefinedVariables():
         print(content + file_suffix)
 
     try:
+        error_node()
         risky_operation()
+        ErrorNode()
     except NonExistentError as nee:
         print(nee + more_info)
-
 
 # Panggil main
 main()

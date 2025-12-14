@@ -56,11 +56,21 @@ class MySemanticVisitor(PythonParserVisitor):
             'locals', 'globals', 'vars', 'dir', 'help', 'id', 'hash',
             'format', 'repr', 'ascii', 'bytes', 'bytearray', 'memoryview',
             'frozenset', 'complex', 'property', 'classmethod', 'staticmethod',
-            'super', 'slice', 'Exception', 'BaseException', 'ValueError',
-            'TypeError', 'KeyError', 'IndexError', 'AttributeError',
+            'super', 'slice',
+            # Common exceptions
+            'Exception', 'BaseException', 'ValueError', 'TypeError', 'KeyError',
+            'IndexError', 'AttributeError', 'RuntimeError', 'NotImplementedError',
+            'ImportError', 'ModuleNotFoundError', 'NameError', 'SyntaxError',
+            'IndentationError', 'TabError', 'SystemError', 'StopIteration',
+            'GeneratorExit', 'KeyboardInterrupt', 'SystemExit', 'OSError',
+            'IOError', 'FileNotFoundError', 'PermissionError', 'ZeroDivisionError',
+            'AssertionError', 'EOFError', 'MemoryError', 'RecursionError',
+            'UnicodeError', 'UnicodeDecodeError', 'UnicodeEncodeError',
+            # Common classes
+            'FileStream', 'StringIO', 'BytesIO',
             # Constants
             'None', 'True', 'False', 'NotImplemented', 'Ellipsis',
-            '__name__', '__main__', '__file__', '__doc__'
+            '__name__', '__main__', '__file__', '__doc__', '__builtins__'
         ]
         for name in builtins:
             self.current_scope.define(name)
@@ -129,8 +139,11 @@ class MySemanticVisitor(PythonParserVisitor):
             
             imports_part = full_text[import_idx + 6:].strip()  # len('import') = 6
             
+            # Remove parentheses if present (multi-line imports)
+            imports_part = imports_part.strip('()')
+            
             # Handle wildcard imports
-            if imports_part == '*':
+            if imports_part.strip() == '*':
                 return
             
             # Split by comma
@@ -147,8 +160,11 @@ class MySemanticVisitor(PythonParserVisitor):
                         if alias and alias.isidentifier():
                             self.current_scope.define(alias)
                 # Handle just "name"
-                elif name_part and name_part.isidentifier():
-                    self.current_scope.define(name_part)
+                else:
+                    # Clean up any remaining parentheses or whitespace
+                    name_part = name_part.strip('() \t\n\r')
+                    if name_part and name_part.isidentifier():
+                        self.current_scope.define(name_part)
         except:
             pass
     
@@ -229,6 +245,38 @@ class MySemanticVisitor(PythonParserVisitor):
             self._define_function_params(ctx)
             
             # Visit function body
+            self.visitChildren(ctx)
+            
+            # Restore parent scope
+            self.current_scope = parent_scope
+            
+        except:
+            pass
+        
+        return None
+    
+    # ===== CLASS DEFINITIONS =====
+    
+    def visitClass_def(self, ctx):
+        """
+        Handle: class ClassName: body
+        Define class name in current scope and create new scope for class body.
+        """
+        try:
+            # Extract class name
+            class_name = self._extract_class_name(ctx)
+            
+            if not class_name:
+                return self.visitChildren(ctx)
+            
+            # Define class in current scope (so it can be instantiated later)
+            self.current_scope.define(class_name)
+            
+            # Create new scope for class body
+            parent_scope = self.current_scope
+            self.current_scope = Scope(class_name, parent=parent_scope)
+            
+            # Visit class body
             self.visitChildren(ctx)
             
             # Restore parent scope
@@ -506,7 +554,7 @@ class MySemanticVisitor(PythonParserVisitor):
     def visitAtom(self, ctx):
         """
         Check NAME tokens in atoms (simple variable references).
-        Be lenient with external class/function names (assume they're imported or built-in).
+        Report undefined variables regardless of casing.
         """
         text = ctx.getText()
         
@@ -519,17 +567,10 @@ class MySemanticVisitor(PythonParserVisitor):
                 if text not in ['None', 'True', 'False', 'self', '__name__', '__main__']:
                     # Check if defined
                     if not self.current_scope.resolve(text):
-                        # Be lenient: assume PascalCase names are class references from external libs
-                        # and UPPERCASE names are constants from external libs
-                        if text[0].isupper():
-                            # Likely a class or constant reference (e.g., QTWindow, CONSTANT)
-                            # Don't report as undefined - assume it's from external library
-                            pass
-                        else:
-                            # Lowercase name that's not defined - report error with line number
-                            line_num = self._get_line_number(ctx)
-                            location = f"line {line_num}" if line_num else "unknown location"
-                            print(f"  ❌ [ERROR] Undefined variable: '{text}' ({location}) in scope '{self.current_scope.name}'")
+                        # Report error with line number
+                        line_num = self._get_line_number(ctx)
+                        location = f"line {line_num}" if line_num else "unknown location"
+                        print(f"  ❌ [ERROR] Undefined variable: '{text}' ({location}) in scope '{self.current_scope.name}'")
         except:
             pass
         
@@ -550,6 +591,35 @@ class MySemanticVisitor(PythonParserVisitor):
                 paren_idx = after_def.find('(')
                 if paren_idx > 0:
                     name = after_def[:paren_idx].strip()
+                    if name and name.isidentifier():
+                        return name
+        except:
+            pass
+        
+        return None
+    
+    def _extract_class_name(self, ctx):
+        """Extract class name from class_def context."""
+        try:
+            full_text = ctx.getText()
+            
+            # Look for pattern: "class NAME:" or "class NAME("
+            class_idx = full_text.find('class')
+            if class_idx >= 0:
+                after_class = full_text[class_idx + 5:].lstrip()
+                # Get everything before ':' or '(' (for inheritance)
+                colon_idx = after_class.find(':')
+                paren_idx = after_class.find('(')
+                
+                # Find the first delimiter
+                end_idx = len(after_class)
+                if colon_idx >= 0:
+                    end_idx = min(end_idx, colon_idx)
+                if paren_idx >= 0:
+                    end_idx = min(end_idx, paren_idx)
+                
+                if end_idx > 0:
+                    name = after_class[:end_idx].strip()
                     if name and name.isidentifier():
                         return name
         except:
