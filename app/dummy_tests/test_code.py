@@ -83,6 +83,11 @@ def complexUndefinedVariables():
         content = f.read()
         print(content + file_suffix)
 
+    try:
+        risky_operation()
+    except NonExistentError as nee:
+        print(nee + more_info)
+
 
 # Panggil main
 main()
